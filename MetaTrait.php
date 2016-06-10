@@ -4,7 +4,7 @@
  * @author Chaim Leichman, MIPO Technologies Ltd
  */
 
-namespace marena\metaTrait;
+namespace marena\meta;
 
 use Yii;
 use yii\db\ActiveRecord;

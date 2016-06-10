@@ -41,6 +41,21 @@ trait MetaTrait
 			return $this->getMetaAttribute($name);
 	}
 
+
+	public function setAttributes($values, $safeOnly = false)
+	{
+		if (is_array($values)) {
+			$attributes = array_flip($safeOnly ? $this->safeAttributes() : $this->attributes());
+			foreach ($values as $name => $value) {
+				if (isset($attributes[$name])) {
+					$this->$name = $value;
+				} elseif (!in_array($name, $this->meta_unsafe)) {
+					$this->$name = $value;
+				}
+			}
+		}
+	}
+
 	/**
 	 * Override __get of yii\db\ActiveRecord
 	 *
@@ -264,6 +279,9 @@ trait MetaTrait
 		$currentVal = $this->getMetaAttribute($name);
 		if(is_null($currentVal))
 		{
+			if (is_null($value))
+				return null;
+
 			$ret = $db
 				->createCommand()
 				->insert($tbl, [
@@ -275,12 +293,22 @@ trait MetaTrait
 		}
 		else
 		{
-			$ret = $db
-				->createCommand()
-				->update($tbl, [
-					'meta_value'=> is_scalar($value) ? $value : serialize($value)
-				], self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
-				->execute();
+			if (!is_null($value)) {
+
+				$ret = $db
+					->createCommand()
+					->update($tbl, [
+						'meta_value'=> is_scalar($value) ? $value : serialize($value)
+					], self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
+					->execute();
+
+			} else {
+
+				$ret = $db
+					->createCommand()
+					->delete($tbl, self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
+					->execute();
+			}
 		}
 
 		// If update succeeded, save the new value right away

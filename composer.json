@@ -1,31 +1,23 @@
 {
     "name": "marena/yii2-meta-trait",
-    "description": "Providers WordPress-like meta table functionality for tables represented by an ActiveRecord class",
     "type": "yii2-extension",
+    "description": "Providers WordPress-like meta table functionality for tables represented by an ActiveRecord class",
     "keywords": ["yii2","extension","trait"],
+    "homepage": "https://github.com/marena/yii2-meta-trait",
     "license": "GPL-3.0+",
     "authors": [
         {
             "name": "Chaim Leichman",
             "email": "chaim@mipo.co.il"
-        },
-        {
-            "name": "Marek Paul",
-            "email": "marek.paul@giss.cz"
         }
     ],
     "require": {
-        "yiisoft/yii2": "*"
+        "php": ">=5.4.0",
+        "yiisoft/yii2": "~2.0"
     },
     "autoload": {
         "psr-4": {
             "marena\\metaTrait\\": ""
         }
-    },
-    "repositories": [
-        {
-            "type": "git",
-            "url": "https://github.com/marena/yii2-meta-trait"
-        }
-    ]
+    }
 }

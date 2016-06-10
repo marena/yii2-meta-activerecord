@@ -1,13 +1,17 @@
 {
-    "name": "mipotech/yii2-meta-activerecord",
+    "name": "mipotech/yii2-meta-trait",
     "description": "Providers WordPress-like meta table functionality for tables represented by an ActiveRecord class",
     "type": "yii2-extension",
-    "keywords": ["yii2","extension","activerecord"],
+    "keywords": ["yii2","extension","trait"],
     "license": "GPL-3.0+",
     "authors": [
         {
             "name": "Chaim Leichman",
             "email": "chaim@mipo.co.il"
+        },
+        {
+            "name": "Marek Paul",
+            "email": "marek.paul@giss.cz"
         }
     ],
     "require": {
@@ -15,13 +19,13 @@
     },
     "autoload": {
         "psr-4": {
-            "mipotech\\metaActiveRecord\\": ""
+            "marena\\metaTrait\\": ""
         }
     },
     "repositories": [
         {
             "type": "git",
-            "url": "https://github.com/mipotech/yii2-meta-activerecord"
+            "url": "https://github.com/marena/yii2-meta-trait"
         }
     ]
 }

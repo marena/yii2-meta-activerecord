@@ -1,5 +1,5 @@
 {
-    "name": "mipotech/yii2-meta-trait",
+    "name": "marena/yii2-meta-trait",
     "description": "Providers WordPress-like meta table functionality for tables represented by an ActiveRecord class",
     "type": "yii2-extension",
     "keywords": ["yii2","extension","trait"],

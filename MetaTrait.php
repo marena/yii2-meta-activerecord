@@ -13,6 +13,7 @@ use yii\db\Schema;
 
 trait MetaTrait
 {
+
 	/** @var boolean $autoLoadMetaData Whether meta data should be loaded  */
 	protected $autoLoadMetaData = true;
 

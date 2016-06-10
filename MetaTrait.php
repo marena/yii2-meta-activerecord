@@ -45,7 +45,7 @@ trait MetaTrait
 	 * Override __get of yii\db\ActiveRecord
 	 *
 	 * @param string $name the property name or the event name
-     * @param mixed $value the property value
+	 * @param mixed $value the property value
 	 */
 	public function __set($name, $value)
 	{
@@ -96,7 +96,7 @@ trait MetaTrait
 	 * Enqueue a meta key-value pair to be saved when the record is saved
 	 *
 	 * @param string $name the property name or the event name
-     * @param mixed $value the property value
+	 * @param mixed $value the property value
 	 */
 	protected function enqueueMetaUpdate($name, $value)
 	{
@@ -114,12 +114,12 @@ trait MetaTrait
 	protected function loadMetaData()
 	{
 		$rows = (new Query)
-		    ->select('*')
-		    ->from($this->metaTableName())
-		    ->where([
-		    	'record_id'	=> $this->{$this->getPkName()}
-		    ])
-		    ->all();
+			->select('*')
+			->from($this->metaTableName())
+			->where([
+				self::tableName().'_id'	=> $this->{$this->getPkName()}
+			])
+			->all();
 
 		$this->metaData = $rows;
 	}
@@ -131,15 +131,7 @@ trait MetaTrait
 	 */
 	public function metaTableName()
 	{
-		$tblName = self::tableName();
-
-		// Add _meta prefix to parent table name
-		$tblName = str_replace('}}', '_meta}}', $tblName);
-
-		// Resolve the actual name of the meta table
-		$tblName = str_replace('{{%', Yii::$app->db->tablePrefix ?: '', $tblName);
-		$tblName = str_replace('}}', '', $tblName);
-
+		$tblName = self::tableName().'_meta';
 		return $tblName;
 	}
 
@@ -154,10 +146,10 @@ trait MetaTrait
 		$name = 'dbname';
 
 		if (preg_match('/' . $name . '=([^;]*)/', $dsn, $match)) {
-            return $match[1];
-        } else {
-            return null;
-        }
+			return $match[1];
+		} else {
+			return null;
+		}
 	}
 
 	/**
@@ -167,14 +159,14 @@ trait MetaTrait
 	protected function assertMetaTable($autoCreate = false)
 	{
 		$row = (new Query)
-		    ->select('*')
-		    ->from('information_schema.tables')
-		    ->where([
-		    	'table_schema'	=> $this->getDbName(),
-		    	'table_name'	=> $this->metaTableName()
-		    ])
-		    ->limit(1)
-		    ->all();
+			->select('*')
+			->from('information_schema.tables')
+			->where([
+				'table_schema'	=> $this->getDbName(),
+				'table_name'	=> $this->metaTableName()
+			])
+			->limit(1)
+			->all();
 
 		if(null === $row)
 		{
@@ -199,20 +191,20 @@ trait MetaTrait
 		$tbl = $this->metaTableName();
 
 		$ret = $db
-				->createCommand()
-				->createTable($tbl, [
-					'id'		=> Schema::TYPE_BIGPK,
-					'record_id' => Schema::TYPE_BIGINT.' NOT NULL default \'0\'',
-					'meta_key'	=> Schema::TYPE_STRING.' default NULL',
-					'meta_value'=> 'longtext',
-				], 'ENGINE=MyISAM  DEFAULT CHARSET=utf8')
-				->execute();
+			->createCommand()
+			->createTable($tbl, [
+				'id'		=> Schema::TYPE_BIGPK,
+				self::tableName().'_id' => Schema::TYPE_BIGINT.' NOT NULL default \'0\'',
+				'meta_key'	=> Schema::TYPE_STRING.' default NULL',
+				'meta_value'=> 'longtext',
+			], 'ENGINE=MyISAM  DEFAULT CHARSET=utf8')
+			->execute();
 
 		if($ret)
 		{
 			$db
 				->createCommand()
-				->createIndex('UNIQUE_META_RECORD', $tbl, ['record_id', 'meta_key'], true)
+				->createIndex('UNIQUE_META_RECORD', $tbl, [self::tableName().'_id', 'meta_key'], true)
 				->execute();
 		}
 
@@ -239,14 +231,14 @@ trait MetaTrait
 			return null;
 
 		$row = (new Query)
-		    ->select('meta_value')
-		    ->from($this->metaTableName())
-		    ->where([
-		    	'record_id'	=> $this->{$this->getPkName()},
-		    	'meta_key'	=> $name
-		    ])
-		    ->limit(1)
-		    ->one();
+			->select('meta_value')
+			->from($this->metaTableName())
+			->where([
+				self::tableName().'_id'	=> $this->{$this->getPkName()},
+				'meta_key'	=> $name
+			])
+			->limit(1)
+			->one();
 
 		return is_array($row) ? $row['meta_value'] : null;
 	}
@@ -255,7 +247,7 @@ trait MetaTrait
 	 * Set the value of the named meta attribute
 	 *
 	 * @param string $name the property name or the event name
-     * @param mixed $value the property value
+	 * @param mixed $value the property value
 	 */
 	protected function setMetaAttribute($name, $value)
 	{
@@ -275,7 +267,7 @@ trait MetaTrait
 			$ret = $db
 				->createCommand()
 				->insert($tbl, [
-					'record_id'	=> $this->{$pk},
+					self::tableName().'_id'	=> $this->{$pk},
 					'meta_key'	=> $name,
 					'meta_value'=> is_scalar($value) ? $value : serialize($value)
 				])
@@ -287,7 +279,7 @@ trait MetaTrait
 				->createCommand()
 				->update($tbl, [
 					'meta_value'=> is_scalar($value) ? $value : serialize($value)
-				], "record_id = '{$this->$pk}' AND meta_key = '{$name}'")
+				], self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
 				->execute();
 		}
 

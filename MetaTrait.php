@@ -8,24 +8,24 @@ namespace marena\meta;
 
 use Yii;
 use yii\db\ActiveRecord;
+use yii\helpers\ArrayHelper;
 use yii\db\Query;
 use yii\db\Schema;
 
 trait MetaTrait
 {
 
-	/** @var boolean $autoLoadMetaData Whether meta data should be loaded  */
+	/** @var boolean $autoLoadMetaData Whether meta data should be loaded */
 	protected $autoLoadMetaData = true;
 
-	/** @var boolean $autoSaveMetaFields Whether meta data should be loaded  */
+	/** @var boolean $autoSaveMetaFields Whether meta data should be saved */
 	protected $autoSaveMetaFields = false;
 
 	/** @var mixed $metaData Array of the this record's meta data */
 	protected $metaData = null;
 
 	/** @var array $metaDataUpdateQueue Queue of meta data key-value pairs to update */
-	protected $metaDataUpdateQueue = array();
-
+	protected $metaDataUpdateQueue = [];
 
 	/**
 	 * Override __get of yii\db\ActiveRecord
@@ -35,12 +35,12 @@ trait MetaTrait
 	 */
 	public function __get($name)
 	{
-		if($this->hasAttribute($name))
-			return parent::__get($name);
-		else
+		$value = parent::__get($name);
+		if(!isset($value) && !$this->hasAttribute($name)) {
 			return $this->getMetaAttribute($name);
+		}
+		return $value;
 	}
-
 
 	public function setAttributes($values, $safeOnly = false)
 	{
@@ -57,6 +57,59 @@ trait MetaTrait
 	}
 
 	/**
+	 * @return array
+	 */
+	private function getMetaAttributes()
+	{
+		$attributes = [];
+		foreach ($this->metaData as $item) {
+			settype($item['meta_value'],$item['meta_type']);
+			$attributes[$item['meta_key']] = $item['meta_value'];
+		}
+		return $attributes;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getAllAttributes()
+	{
+		return ArrayHelper::merge($this->getAttributes(null, $this->except_attributes), $this->getMetaAttributes());
+	}
+
+	/**
+	 * Returns attribute values.
+	 * @param array $names list of attributes whose value needs to be returned.
+	 * Defaults to null, meaning all attributes listed in [[attributes()]] will be returned.
+	 * If it is an array, only the attributes in the array will be returned.
+	 * @param array $except list of attributes whose value should NOT be returned.
+	 * @param bool $metaData retrun metadat.
+	 * @return array attribute values (name => value).
+	 */
+	public function getAttributes($names = null, $except = [], $metaData = true)
+	{
+		$values = [];
+		if ($names === null) {
+			$names = $this->attributes();
+		}
+		foreach ($names as $name) {
+			$values[$name] = $this->$name;
+		}
+
+		if ($metaData) {
+			$values = ArrayHelper::merge($values, $this->getMetaAttributes());
+		}
+
+		$except = ArrayHelper::merge($except, $this->except_attributes);
+
+		foreach ($except as $name) {
+			unset($values[$name]);
+		}
+
+		return $values;
+	}
+
+	/**
 	 * Override __get of yii\db\ActiveRecord
 	 *
 	 * @param string $name the property name or the event name
@@ -66,8 +119,7 @@ trait MetaTrait
 	{
 		if ($this->hasAttribute($name))
 			parent::__set($name, $value);
-		else
-		{
+		else {
 			if ($this->autoSaveMetaFields && !$this->isNewRecord)
 				$this->setMetaAttribute($name, $value);
 			else
@@ -82,10 +134,10 @@ trait MetaTrait
 	 */
 	public function afterFind()
 	{
+		parent::afterFind();
+
 		if ($this->autoLoadMetaData)
 			$this->loadMetaData();
-
-		parent::afterFind();
 	}
 
 	/**
@@ -96,8 +148,7 @@ trait MetaTrait
 	{
 		$queue = $this->metaDataUpdateQueue;
 
-		if (is_array($queue) && count($queue))
-		{
+		if (is_array($queue) && count($queue)) {
 			foreach ($queue as $name => $value)
 				$this->setMetaAttribute($name, $value);
 
@@ -115,7 +166,7 @@ trait MetaTrait
 	 */
 	protected function enqueueMetaUpdate($name, $value)
 	{
-		if(!is_array($this->metaDataUpdateQueue))
+		if (!is_array($this->metaDataUpdateQueue))
 			$this->metaDataUpdateQueue = array();
 
 		$this->metaDataUpdateQueue[$name] = $value;
@@ -132,7 +183,7 @@ trait MetaTrait
 			->select('*')
 			->from($this->metaTableName())
 			->where([
-				self::tableName().'_id'	=> $this->{$this->getPkName()}
+				self::tableName() . '_id' => $this->{$this->getPkName()}
 			])
 			->all();
 
@@ -146,7 +197,7 @@ trait MetaTrait
 	 */
 	public function metaTableName()
 	{
-		$tblName = self::tableName().'_meta';
+		$tblName = self::tableName() . '_meta';
 		return $tblName;
 	}
 
@@ -177,23 +228,19 @@ trait MetaTrait
 			->select('*')
 			->from('information_schema.tables')
 			->where([
-				'table_schema'	=> $this->getDbName(),
-				'table_name'	=> $this->metaTableName()
+				'table_schema' => $this->getDbName(),
+				'table_name' => $this->metaTableName()
 			])
 			->limit(1)
 			->all();
 
-		if(null === $row)
-		{
-			if($autoCreate)
-			{
+		if (null === $row) {
+			if ($autoCreate) {
 				$this->createMetaTable();
 				return true;
-			}
-			else
+			} else
 				return false;
-		}
-		else
+		} else
 			return true;
 	}
 
@@ -208,18 +255,18 @@ trait MetaTrait
 		$ret = $db
 			->createCommand()
 			->createTable($tbl, [
-				'id'		=> Schema::TYPE_BIGPK,
-				self::tableName().'_id' => Schema::TYPE_BIGINT.' NOT NULL default \'0\'',
-				'meta_key'	=> Schema::TYPE_STRING.' default NULL',
-				'meta_value'=> 'longtext',
+				'id' => Schema::TYPE_BIGPK,
+				self::tableName() . '_id' => Schema::TYPE_BIGINT . ' NOT NULL default \'0\'',
+				'meta_key' => Schema::TYPE_STRING . ' default NULL',
+				'meta_value' => 'longtext',
+				'meta_type' => 'varcher(32)',
 			], 'ENGINE=MyISAM  DEFAULT CHARSET=utf8')
 			->execute();
 
-		if($ret)
-		{
+		if ($ret) {
 			$db
 				->createCommand()
-				->createIndex('UNIQUE_META_RECORD', $tbl, [self::tableName().'_id', 'meta_key'], true)
+				->createIndex('UNIQUE_META_RECORD', $tbl, [self::tableName() . '_id', 'meta_key'], true)
 				->execute();
 		}
 
@@ -242,15 +289,15 @@ trait MetaTrait
 	 */
 	protected function getMetaAttribute($name)
 	{
-		if(!$this->assertMetaTable())
+		if (!$this->assertMetaTable())
 			return null;
 
 		$row = (new Query)
-			->select('meta_value')
+			->select('meta_value, meta_type')
 			->from($this->metaTableName())
 			->where([
-				self::tableName().'_id'	=> $this->{$this->getPkName()},
-				'meta_key'	=> $name
+				self::tableName() . '_id' => $this->{$this->getPkName()},
+				'meta_key' => $name
 			])
 			->limit(1)
 			->one();
@@ -277,42 +324,41 @@ trait MetaTrait
 
 		// Check if we need to create a new record or update an existing record
 		$currentVal = $this->getMetaAttribute($name);
-		if(is_null($currentVal))
-		{
+		if (is_null($currentVal)) {
 			if (is_null($value))
 				return null;
 
 			$ret = $db
 				->createCommand()
 				->insert($tbl, [
-					self::tableName().'_id'	=> $this->{$pk},
-					'meta_key'	=> $name,
-					'meta_value'=> is_scalar($value) ? $value : serialize($value)
+					self::tableName() . '_id' => $this->{$pk},
+					'meta_key' => $name,
+					'meta_value' => is_scalar($value) ? $value : serialize($value),
+					'meta_type' => gettype($value),
 				])
 				->execute();
-		}
-		else
-		{
+		} else {
 			if (!is_null($value)) {
 
 				$ret = $db
 					->createCommand()
 					->update($tbl, [
-						'meta_value'=> is_scalar($value) ? $value : serialize($value)
-					], self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
+						'meta_value' => is_scalar($value) ? $value : serialize($value),
+						'meta_type' => gettype($value),
+					], self::tableName() . "_id = '{$this->$pk}' AND meta_key = '{$name}'")
 					->execute();
 
 			} else {
 
 				$ret = $db
 					->createCommand()
-					->delete($tbl, self::tableName()."_id = '{$this->$pk}' AND meta_key = '{$name}'")
+					->delete($tbl, self::tableName() . "_id = '{$this->$pk}' AND meta_key = '{$name}'")
 					->execute();
 			}
 		}
 
 		// If update succeeded, save the new value right away
-		if($ret)
+		if ($ret)
 			$this->metaData[$name] = $value;
 
 		return $ret;
